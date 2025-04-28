@@ -1,0 +1,20 @@
+[package]
+name = "resampler-rs"
+version = "0.0.1"
+edition = "2024"
+authors = ["0xAA55 <838816058@qq.com>"]
+readme = "Readme.md"
+license-file = "LICENSE"
+description = "A waveform resampler mainly for audio processing written in Rust"
+repository = "https://github.com/0xAA55-rs/resampler-rs"
+keywords = ["audio", "resampler"]
+
+[dependencies]
+rustfft = "6.3.0"
+
+[profile.release]
+lto = "fat"
+
+[lib]
+name = "resampler"
+path = "src/resampler.rs"
