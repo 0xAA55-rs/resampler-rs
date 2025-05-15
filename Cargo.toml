@@ -1,6 +1,6 @@
 [package]
 name = "resampler-rs"
-version = "0.0.3"
+version = "0.0.4"
 edition = "2024"
 authors = ["0xAA55 <838816058@qq.com>"]
 readme = "Readme.md"
