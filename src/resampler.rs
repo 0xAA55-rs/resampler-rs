@@ -57,6 +57,19 @@ impl Resampler {
         }
     }
 
+    /// * The fft size can be any number greater than the sample rate of the encoder or the decoder.
+    /// * It is for the resampler. A greater number results in better resample quality, but the process could be slower.
+    /// * In most cases, the audio sampling rate is about `11025` to `48000`, so `65536` is the best number for the resampler.
+    pub fn get_rounded_up_fft_size(sample_rate: u32) -> usize {
+        for i in 0..31 {
+            let fft_size = 1usize << i;
+            if fft_size >= sample_rate as usize {
+                return fft_size;
+            }
+        }
+        0x1_00000000_usize
+    }
+
     /// `desired_length`: The target audio length to achieve, which must not exceed the FFT size.
     /// When samples.len() < desired_length, it indicates audio stretching to desired_length.
     /// When samples.len() > desired_length, it indicates audio compression to desired_length.
