@@ -81,21 +81,23 @@ impl Resampler {
             ret[back - i] = ret[i].conj();
         }
         if n & 1 == 1 {
-            ret[half] = Complex::new(samples[n - 1] as f64, 0.0);
+            ret[half] = Complex::new(samples[back] as f64, 0.0);
         }
         ret
     }
 
+    /// Turn comples numbers into real numbers
     pub fn complex_to_real(complex: &[Complex<f64>]) -> Vec<f64> {
         let n = complex.len();
         let half = n / 2;
+        let back = n - 1;
         let mut ret = vec![0.0; n];
         for i in 0..half {
             ret[i * 2] = complex[i].re;
             ret[i * 2 + 1] = complex[i].im;
         }
         if n & 1 == 1 {
-            ret[n - 1] = complex[half].re;
+            ret[back] = complex[half].re;
         }
         ret
     }
@@ -172,6 +174,7 @@ impl Resampler {
 
         let mut real_ret = Self::complex_to_real(&fftdst);
 
+        // Truncate at the waveform output stage.
         real_ret.truncate(desired_length);
 
         Ok(real_ret.into_iter().map(|r|(r * self.normalize_scaler) as f32).collect())
