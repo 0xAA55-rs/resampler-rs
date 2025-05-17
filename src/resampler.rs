@@ -74,13 +74,13 @@ impl Resampler {
     pub fn real_to_complex(samples: &[f32]) -> Vec<Complex<f64>> {
         let n = samples.len();
         let half = n / 2;
+        let back = n - 1;
         let mut ret = vec![Complex::default(); n];
-        ret[0] = Complex::new(samples[0] as f64, 0.0);
-        for i in 1..half {
-            ret[i] = Complex::new(samples[i * 2 - 1] as f64, samples[i * 2] as f64);
-            ret[n - i] = ret[i].conj();
+        for i in 0..half {
+            ret[i] = Complex::new(samples[i * 2] as f64, samples[i * 2 + 1] as f64);
+            ret[back - i] = ret[i].conj();
         }
-        if n & 1 == 0 {
+        if n & 1 == 1 {
             ret[half] = Complex::new(samples[n - 1] as f64, 0.0);
         }
         ret
@@ -90,12 +90,11 @@ impl Resampler {
         let n = complex.len();
         let half = n / 2;
         let mut ret = vec![0.0; n];
-        ret[0] = complex[0].re;
-        for i in 1..half {
-            ret[i * 2 - 1] = complex[i].re;
-            ret[i * 2] = complex[i].im;
+        for i in 0..half {
+            ret[i * 2] = complex[i].re;
+            ret[i * 2 + 1] = complex[i].im;
         }
-        if n & 1 == 0 {
+        if n & 1 == 1 {
             ret[n - 1] = complex[half].re;
         }
         ret
