@@ -30,9 +30,9 @@ pub struct Resampler {
     normalize_scaler: f64,
 }
 
-fn get_average(complexes: &[Complex<f64>]) -> Complex<f64> {
-    let sum: Complex<f64> = complexes.iter().copied().sum();
-    let scaler = 1.0 / complexes.len() as f64;
+fn get_average(complex: &[Complex<f64>]) -> Complex<f64> {
+    let sum: Complex<f64> = complex.iter().copied().sum();
+    let scaler = 1.0 / complex.len() as f64;
     Complex::<f64> {
         re: sum.re * scaler,
         im: sum.im * scaler,
@@ -70,6 +70,37 @@ impl Resampler {
         0x1_00000000_usize
     }
 
+    /// Turn real numbers into complex numbers with conj
+    pub fn real_to_complex(samples: &[f32]) -> Vec<Complex<f64>> {
+        let n = samples.len();
+        let half = n / 2;
+        let mut ret = vec![Complex::default(); n];
+        ret[0] = Complex::new(samples[0] as f64, 0.0);
+        for i in 1..half {
+            ret[i] = Complex::new(samples[i * 2 - 1] as f64, samples[i * 2] as f64);
+            ret[n - i] = ret[i].conj();
+        }
+        if n & 1 == 0 {
+            ret[half] = Complex::new(samples[n - 1] as f64, 0.0);
+        }
+        ret
+    }
+
+    pub fn complex_to_real(complex: &[Complex<f64>]) -> Vec<f64> {
+        let n = complex.len();
+        let half = n / 2;
+        let mut ret = vec![0.0; n];
+        ret[0] = complex[0].re;
+        for i in 1..half {
+            ret[i * 2 - 1] = complex[i].re;
+            ret[i * 2] = complex[i].im;
+        }
+        if n & 1 == 0 {
+            ret[n - 1] = complex[half].re;
+        }
+        ret
+    }
+
     /// `desired_length`: The target audio length to achieve, which must not exceed the FFT size.
     /// When samples.len() < desired_length, it indicates audio stretching to desired_length.
     /// When samples.len() > desired_length, it indicates audio compression to desired_length.
@@ -86,7 +117,7 @@ impl Resampler {
             return Err(ResamplerError::SizeError(format!("The desired size {desired_length} must not exceed the FFT size {}", self.fft_size)));
         }
 
-        let mut fftbuf: Vec<Complex<f64>> = samples.iter().map(|sample: &f32| -> Complex<f64> {Complex{re: *sample as f64, im: 0.0}}).collect();
+        let mut fftbuf: Vec<Complex<f64>> = Self::real_to_complex(samples);
 
         if fftbuf.len() <= self.fft_size {
             fftbuf.resize(self.fft_size, Complex{re: 0.0, im: 0.0});
@@ -140,9 +171,11 @@ impl Resampler {
 
         self.fft_inverse.process(&mut fftdst);
 
-        fftdst.truncate(desired_length);
+        let mut real_ret = Self::complex_to_real(&fftdst);
 
-        Ok(fftdst.into_iter().map(|c| -> f32 {(c.re * self.normalize_scaler) as f32}).collect())
+        real_ret.truncate(desired_length);
+
+        Ok(real_ret.into_iter().map(|r|(r * self.normalize_scaler) as f32).collect())
     }
 
     /// The processing unit size should be adjusted to work in "chunks per second", 
